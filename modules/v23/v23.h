@@ -16,10 +16,18 @@ struct v23out_play_t {
 };
 */
 
+enum v23_enc_state {
+    HOOKUP_FREQ_2100,
+    HOOKUP_SILENCE,
+    HOOKUP_FREQ_1300
+};
+
 struct v23modem_enc {
     struct aufilt_enc_st af; // base class
     uint32_t srate;
     struct mbuf *tone_buf;
+    uint64_t ns_counter;
+    enum v23_enc_state state;
 };
 
 struct v23modem_dec {

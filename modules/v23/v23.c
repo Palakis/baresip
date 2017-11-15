@@ -47,7 +47,10 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 	st->srate = prm->srate;
 	st->tone_buf = mbuf_alloc(st->srate * 2);
-	set_sine(st, 600, 80);
+	st->ns_counter = 0;
+
+	st->state = HOOKUP_FREQ_2100;
+	set_sine(st, 2100, 80);
 
 	*stp = (struct aufilt_enc_st*)st;
 
@@ -74,16 +77,38 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	return 0;
 }
 
+static uint64_t ms_to_ns(uint64_t ms) {
+    return ms * 1000000;
+}
+
 static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 {
 	struct v23modem_enc *ctx = (struct v23modem_enc*)st;
 	size_t i, samples = *sampc;
 
 	for(i = 0; i < samples; i++) {
+		if (ctx->state == HOOKUP_FREQ_2100 && ctx->ns_counter >= ms_to_ns(3000)) {
+			ctx->state = HOOKUP_SILENCE;
+			set_sine(ctx, 0, 0);
+			ctx->ns_counter = 0;
+		}
+		else if (ctx->state == HOOKUP_SILENCE && ctx->ns_counter >= ms_to_ns(75)) {
+			ctx->state = HOOKUP_FREQ_1300;
+			set_sine(ctx, 1300, 80);
+			ctx->ns_counter = 0;
+		}
+		else if (ctx->state == HOOKUP_FREQ_1300 && ctx->ns_counter >= ms_to_ns(60)) {
+			ctx->state = HOOKUP_FREQ_2100;
+			set_sine(ctx, 2100, 80);
+			ctx->ns_counter = 0;
+		}
+
 		*(sampv + i) = mbuf_read_u16(ctx->tone_buf);
 		if(mbuf_get_left(ctx->tone_buf) <= 0) {
 			mbuf_set_pos(ctx->tone_buf, 0);
 		}
+
+		ctx->ns_counter += (ms_to_ns(1000) / ctx->srate);
 	}
 
 	return 0;
