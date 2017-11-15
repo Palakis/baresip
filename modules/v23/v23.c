@@ -28,7 +28,7 @@ static void enc_destructor(void *arg)
 static void dec_destructor(void *arg)
 {
 	struct v23modem_dec *st = (struct v23modem_dec*)arg;
-	(void)st;
+	mem_deref(st->v23);
 }
 
 static void set_sine(struct v23modem_enc* st, uint32_t freq, int amplitude) {
@@ -87,7 +87,9 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!st)
 		return ENOMEM;
 
-	st->v23 = (struct v23_t*)ctx;
+	st->v23 = (struct v23_t*)(*ctx);
+	mem_ref(st->v23);
+
 	st->srate = prm->srate;
 
 	*stp = (struct aufilt_dec_st*)st;
