@@ -49,8 +49,8 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	st->tone_buf = mbuf_alloc(st->srate * 2);
 	st->ns_counter = 0;
 
-	st->state = HOOKUP_FREQ_2100;
-	set_sine(st, 2100, 80);
+	st->conn_state = V23_HOOK;
+	st->hook_state = HOOK_NONE;
 
 	*stp = (struct aufilt_enc_st*)st;
 
@@ -87,20 +87,25 @@ static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 	size_t i, samples = *sampc;
 
 	for(i = 0; i < samples; i++) {
-		if (ctx->state == HOOKUP_FREQ_2100 && ctx->ns_counter >= ms_to_ns(3000)) {
-			ctx->state = HOOKUP_SILENCE;
-			set_sine(ctx, 0, 0);
-			ctx->ns_counter = 0;
-		}
-		else if (ctx->state == HOOKUP_SILENCE && ctx->ns_counter >= ms_to_ns(75)) {
-			ctx->state = HOOKUP_FREQ_1300;
-			set_sine(ctx, 1300, 80);
-			ctx->ns_counter = 0;
-		}
-		else if (ctx->state == HOOKUP_FREQ_1300 && ctx->ns_counter >= ms_to_ns(60)) {
-			ctx->state = HOOKUP_FREQ_2100;
-			set_sine(ctx, 2100, 80);
-			ctx->ns_counter = 0;
+		if (ctx->conn_state == V23_HOOK) {
+			if (ctx->hook_state == HOOK_FREQ_2100 && ctx->ns_counter >= ms_to_ns(3000)) {
+				ctx->hook_state = HOOK_SILENCE;
+				set_sine(ctx, 0, 0);
+				ctx->ns_counter = 0;
+			}
+			else if (ctx->hook_state == HOOK_SILENCE && ctx->ns_counter >= ms_to_ns(75)) {
+				ctx->hook_state = HOOK_FREQ_1300;
+				set_sine(ctx, 1300, 80);
+				ctx->ns_counter = 0;
+			}
+			else if (
+				(ctx->hook_state == HOOK_FREQ_1300 && ctx->ns_counter >= ms_to_ns(60))
+				 || ctx->hook_state == HOOK_NONE
+			) {
+				ctx->hook_state = HOOK_FREQ_2100;
+				set_sine(ctx, 2100, 80);
+				ctx->ns_counter = 0;
+			}
 		}
 
 		*(sampv + i) = mbuf_read_u16(ctx->tone_buf);

@@ -16,10 +16,17 @@ struct v23out_play_t {
 };
 */
 
-enum v23_enc_state {
-    HOOKUP_FREQ_2100,
-    HOOKUP_SILENCE,
-    HOOKUP_FREQ_1300
+enum v23_hook_sequence_state {
+    HOOK_NONE,
+    HOOK_FREQ_2100,
+    HOOK_SILENCE,
+    HOOK_FREQ_1300
+};
+
+enum v23_connection_state {
+    V23_HOOK,
+    V23_CONNECTED,
+    V23_DISCONNECTED
 };
 
 struct v23modem_enc {
@@ -27,7 +34,8 @@ struct v23modem_enc {
     uint32_t srate;
     struct mbuf *tone_buf;
     uint64_t ns_counter;
-    enum v23_enc_state state;
+    enum v23_connection_state conn_state;
+    enum v23_hook_sequence_state hook_state;
 };
 
 struct v23modem_dec {
