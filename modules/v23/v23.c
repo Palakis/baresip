@@ -12,9 +12,6 @@
  * NOTE: very experimental
  */
 
-//static struct ausrc* v23in;
-//static struct auplay* v23out;
-
 static void set_sine(struct v23modem_enc* st, uint32_t freq, int amplitude) {
 	autone_sine(st->tone_buf, st->srate, freq, amplitude, 0, 0);
 	mbuf_set_pos(st->tone_buf, 0);
@@ -133,23 +130,13 @@ static struct aufilt v23modem = {
 
 static int module_init(void)
 {
-	int err = 0;
-
-	//err = ausrc_register(&v23in, baresip_ausrcl(), "v23", v23in_src_alloc);
-	//err |= auplay_register(&v23out, baresip_auplayl(), "v23", v23out_play_alloc);
-
 	aufilt_register(baresip_aufiltl(), &v23modem);
-
-	return err;
+	return 0;
 }
 
 static int module_close(void)
 {
-	//ausrc = mem_deref(ausrc);
-	//auplay = mem_deref(auplay);
-
 	aufilt_unregister(&v23modem);
-
 	return 0;
 }
 
