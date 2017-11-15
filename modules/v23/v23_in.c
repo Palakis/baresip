@@ -5,6 +5,7 @@
 
 #include "v23.h"
 
+/*
 static void v23in_destructor(void *arg)
 {
 	struct v23in_src_t *in_ctx = arg;
@@ -34,3 +35,4 @@ int v23in_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	return 0;
 }
+*/

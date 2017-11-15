@@ -5,6 +5,7 @@
 
 #include "v23.h"
 
+/*
 static void v23out_destructor(void *arg)
 {
 	struct v23out_play_t *out_ctx = arg;
@@ -31,3 +32,4 @@ int v23out_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	return 0;
 }
+*/
