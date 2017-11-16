@@ -5,6 +5,6 @@
 #
 
 MOD		:= v23
-$(MOD)_SRCS	+= v23.c
+$(MOD)_SRCS	+= v23.c sine.c
 
 include mk/mod.mk

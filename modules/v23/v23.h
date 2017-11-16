@@ -1,3 +1,8 @@
+#ifndef V23_H
+#define V23_H
+
+#include "sine.h"
+
 enum v23_hook_sequence_state {
     HOOK_NONE,
     HOOK_FREQ_2100,
@@ -19,9 +24,9 @@ struct v23modem_enc {
     struct aufilt_enc_st af; // base class
     struct v23_t *v23;
     uint32_t srate;
-    struct mbuf *tone_buf;
     uint64_t ns_counter;
     enum v23_hook_sequence_state hook_state;
+    struct sine_t *sine_gen;
 };
 
 struct v23modem_dec {
@@ -29,3 +34,5 @@ struct v23modem_dec {
     struct v23_t *v23;
     uint32_t srate;
 };
+
+#endif // V23_H
