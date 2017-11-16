@@ -174,12 +174,14 @@ static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
 		if (ctx->v23->conn_state == V23_HOOK) {
 			double hi_level = goertzel_result(&ctx->gtz_hi);
 			if(hi_level > CARRIER_THRESHOLD) {
-				if(ctx->carrier_ns <= 0) {
+				if (ctx->carrier_ns <= 0) {
 					info("v23 decoder: hook: carrier detected!\n");
 				}
 				ctx->carrier_ns += (ms_to_ns(1000) / ctx->srate); 
 			} else {
-				info("v23 decode: hook: carrier lost...\n");
+				if (ctx->carrier_ns > 0) {
+					info("v23 decode: hook: carrier lost...\n");
+				}
 				ctx->carrier_ns = 0;
 			}
 		}
