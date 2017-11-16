@@ -3,8 +3,11 @@
  */
 #include <re.h>
 #include <baresip.h>
+#include "dsp.h"
 
 #include "v23.h"
+
+#define CARRIER_THRESHOLD 16439.10631
 
 /**
  * V23 modem implementation as a filter
@@ -50,6 +53,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	st->v23 = common_st;
 
 	st->srate = prm->srate;
+	st->baud_rate = 1200;
 	st->ns_counter = 0;
 
 	st->v23->conn_state = V23_HOOK;
@@ -86,6 +90,11 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	mem_ref(st->v23);
 
 	st->srate = prm->srate;
+	st->baud_rate = 75;
+	st->carrier_ns = 0;
+
+	goertzel_init(&st->gtz_hi, 390, st->srate);
+	goertzel_init(&st->gtz_lo, 450, st->srate);
 
 	*stp = (struct aufilt_dec_st*)st;
 
@@ -102,6 +111,9 @@ static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 
 	uint32_t freq = 0;
 	size_t i, samples = *sampc;
+	
+	// in nanoseconds
+	uint64_t symbol_interval = 1000000000 / ctx->baud_rate;
 
 	for(i = 0; i < samples; i++) {
 		if (ctx->v23->conn_state == V23_HOOK) {
@@ -139,6 +151,9 @@ static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 					break;
 			}
 		}
+		else if (ctx->v23->conn_state == V23_CONNECTED) {
+			// TODO
+		}
 
 		sine_generate(ctx->sine_gen, sampv + i, 1, freq, ctx->srate);
 		ctx->ns_counter += (ms_to_ns(1000) / ctx->srate);
@@ -150,7 +165,35 @@ static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
 {
 	struct v23modem_dec *ctx = (struct v23modem_dec*)st;
-	(void)ctx;
+	size_t i, samples = *sampc;
+
+	for (i = 0; i < samples; i++) {
+		goertzel_update(&ctx->gtz_hi, *(sampv + i));
+		goertzel_update(&ctx->gtz_lo, *(sampv + i));
+
+		if (ctx->v23->conn_state == V23_HOOK) {
+			double hi_level = goertzel_result(&ctx->gtz_hi);
+			if(hi_level > CARRIER_THRESHOLD) {
+				if(ctx->carrier_ns <= 0) {
+					info("v23 decoder: hook: carrier detected!\n");
+				}
+				ctx->carrier_ns += (ms_to_ns(1000) / ctx->srate); 
+			} else {
+				info("v23 decode: hook: carrier lost...\n");
+				ctx->carrier_ns = 0;
+			}
+		}
+	}
+
+	if (ctx->v23->conn_state == V23_HOOK) {
+		if (ctx->carrier_ns >= ms_to_ns(100)) {
+			info("v23 decoder: hook: carrier is stable, switching to connected state\n");
+			ctx->v23->conn_state = V23_CONNECTED;
+		}
+	}
+	else if (ctx->v23->conn_state == V23_CONNECTED) {
+		// TODO
+	}
 
 	return 0;
 }
@@ -161,6 +204,7 @@ static struct aufilt v23modem = {
 
 static int module_init(void)
 {
+	dsp_init();
 	aufilt_register(baresip_aufiltl(), &v23modem);
 	return 0;
 }

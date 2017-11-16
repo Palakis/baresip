@@ -1,9 +1,4 @@
-#define PHASE_BITS 16
-#define PHASE_BASE (1 << PHASE_BITS)
-#define M_PI 3.14159265358979323846264338327
-
-#include <math.h>
-
+#include "dsp.h"
 #include "mod.h"
 
 static void sine_dealloc(void *arg)
@@ -15,15 +10,9 @@ static void sine_dealloc(void *arg)
 struct sine_t* sine_alloc(void)
 {
 	struct sine_t* st;
-	int i;
-
 	st = mem_zalloc(sizeof(*st), sine_dealloc);
 	if(!st)
 		return NULL;
-
-	for (i = 0; i < COS_TABLE_SIZE; i++) {
-		st->cos_tab[i] = (int16_t) (cos(2 * M_PI * i / COS_TABLE_SIZE) * COS_BASE);
-	}
 
 	return st;
 }
@@ -45,7 +34,7 @@ void sine_generate(struct sine_t *st, int16_t *sampv, size_t sampc,
 	phase = st->phase;
 
 	for (i = 0; i < sampc; i++) {
-		*(sampv + i) = st->cos_tab[(phase >> (PHASE_BITS - COS_TABLE_BITS)) & (COS_TABLE_SIZE-1)];
+		*(sampv + i) = dsp_cos(phase);
 		phase += st->omega;
 	}
 
