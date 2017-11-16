@@ -4,7 +4,7 @@
 
 #include <math.h>
 
-#include "sine.h"
+#include "mod.h"
 
 static void sine_dealloc(void *arg)
 {

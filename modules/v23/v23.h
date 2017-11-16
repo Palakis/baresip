@@ -1,7 +1,7 @@
 #ifndef V23_H
 #define V23_H
 
-#include "sine.h"
+#include "mod.h"
 
 enum v23_hook_sequence_state {
     HOOK_NONE,
